@@ -1,0 +1,20 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+docker-compose.yml
+# Virtual environments
+.venv
+.env
+.vscode/
+config
+logs/
+
+run_paper_trading.py
+run_screener.py
+run_strategy_test.py
+visualize_strategy.py
