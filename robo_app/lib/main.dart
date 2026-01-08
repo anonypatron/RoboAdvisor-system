@@ -1,7 +1,9 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'screens/dashboard_screen.dart';
+import 'package:provider/provider.dart';
+import 'views/dashboard_screen.dart';
+import 'viewmodels/dashboard_view_model.dart';
 import 'utils/logger.dart';
 
 void main() async {
@@ -32,7 +34,14 @@ void main() async {
     );
   };
 
-  runApp(const MyApp());
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+      ],
+      child: const MyApp(),
+    ),
+  );
 }
 
 class MyApp extends StatelessWidget {
