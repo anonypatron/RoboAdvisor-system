@@ -38,4 +38,17 @@ class DashboardViewModel extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<bool> sellStock(String ticker, int quantity) async {
+    bool success = await ApiService.sellStock(ticker, quantity);
+
+    if (success) {
+      await fetchDashboard();
+      return true;
+    }
+    else {
+      return false;
+    }
+  }
+  
 }

@@ -47,6 +47,27 @@ class TradeLog(Base):
     total_amount = Column(Float)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
 
+class RecommendationResult(Base):
+    """
+    [배치 결과 테이블]
+    매일 아침 스케줄러가 분석한 결과를 여기에 저장
+    """
+
+    __tablename__ = "recommendation_results"
+
+    id = Column(Integer, primary_key=True, index=True)
+    ticker = Column(String(10), index=True)
+    date = Column(Date)
+    close_price = Column(Float)
+    signal_type = Column(String(50)) # 전략 이름
+    created_at = Column(DateTime, default=datetime.datetime.now)
+
+class Watchlist(Base):
+    __tablename__ = "watchlist"
+
+    ticker = Column(String(10), primary_key=True, index=True)
+    added_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 def init_db():
     Base.metadata.create_all(bind=engine)
     print("✅ Database tables created successfully.")

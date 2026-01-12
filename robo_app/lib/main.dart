@@ -1,10 +1,15 @@
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:provider/provider.dart';
-import 'views/dashboard_screen.dart';
-import 'viewmodels/dashboard_view_model.dart';
+import 'package:robo_app/viewmodels/recommend_view_model.dart';
+
 import 'utils/logger.dart';
+import 'viewmodels/dashboard_view_model.dart';
+import 'viewmodels/watchlist_view_model.dart';
+import 'views/main_screen.dart';
+import 'views/search_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +43,8 @@ void main() async {
     MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => DashboardViewModel()),
+        ChangeNotifierProvider(create: (_) => RecommendViewModel()),
+        ChangeNotifierProvider(create: (_) => WatchlistViewModel()),
       ],
       child: const MyApp(),
     ),
@@ -56,7 +63,7 @@ class MyApp extends StatelessWidget {
         useMaterial3: true,
       ),
       debugShowCheckedModeBanner: false, 
-      home: const DashboardScreen(),
+      home: const MainScreen(),
     );
   }
 }
