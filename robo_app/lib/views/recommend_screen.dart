@@ -93,7 +93,7 @@ class _RecommendScreenState extends State<RecommendScreen> {
                           width: double.infinity,
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.1),
+                            color: Colors.green.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text("💡 전략 포착: ${item.signalType}", 

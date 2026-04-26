@@ -1,46 +1,45 @@
-import datetime
+import logging
+
 from sqlalchemy.orm import Session
-from src.core.database import SessionLocal, StockPrice, RecommendationResult
+
 from src.core.advisor import RoboAdvisor
+from src.core.database import RecommendationResult, SessionLocal, StockPrice
 from src.strategies.advanced import GoldenCrossVolumeStrategy
 
+logger = logging.getLogger(__name__)
 advisor = RoboAdvisor(GoldenCrossVolumeStrategy(vol_ratio=1.5))
 
-def update_daily_recommendations():
-    """
-    [배치 작업] 
-    1. S&P 500 전 종목 스캔
-    2. 매수 신호 종목 발굴
-    3. DB 결과 테이블 갱신 (기존 데이터 지우고 새로 저장)
-    """
-    print("⏰ [Scheduler] Daily Market Scan Started...")
+
+def update_daily_recommendations() -> None:
+    logger.info("추천 종목 일일 스캔 시작")
     db: Session = SessionLocal()
-    
+
     try:
-        tickers = [r[0] for r in db.query(StockPrice.ticker).distinct().all()]
+        tickers = [row[0] for row in db.query(StockPrice.ticker).distinct().all()]
         if not tickers:
-            print("⚠️ No data found in DB.")
+            logger.warning("stock_prices 테이블에 데이터가 없어 추천 생성을 건너뜁니다.")
             return
 
-        results = advisor.screen_market(tickers)
-        print(f"✅ Analysis Complete. Found {len(results)} candidates.")
+        results = advisor.screen_market(db, tickers)
+        logger.info("추천 후보 %s건 생성", len(results))
 
         db.query(RecommendationResult).delete()
-        
+
         for item in results:
-            rec = RecommendationResult(
-                ticker=item['ticker'],
-                date=item['date'], # 이미 datetime.date 객체임
-                close_price=item['close'],
-                signal_type="Golden Cross + Volume" # 지금은 전략이 하나지만 나중에 확장 가능
+            db.add(
+                RecommendationResult(
+                    ticker=item["ticker"],
+                    date=item["date"],
+                    close_price=item["close"],
+                    signal_type="Golden Cross + Volume",
+                )
             )
-            db.add(rec)
-        
+
         db.commit()
-        print("💾 [Scheduler] Results saved to DB.")
-        
-    except Exception as e:
-        print(f"❌ [Scheduler] Error: {e}")
+        logger.info("추천 결과 저장 완료")
+    except Exception:
+        logger.exception("추천 스케줄 실행 중 오류 발생")
         db.rollback()
+        raise
     finally:
         db.close()

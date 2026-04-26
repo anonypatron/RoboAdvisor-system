@@ -1,31 +1,62 @@
-import 'package:freezed_annotation/freezed_annotation.dart';
+class Holding {
+  const Holding({
+    required this.ticker,
+    required this.qty,
+    required this.avgPrice,
+    required this.currentPrice,
+    required this.marketValue,
+    required this.profitAmount,
+    required this.returnPct,
+  });
 
-part 'dashboard_data.freezed.dart';
-part 'dashboard_data.g.dart';
+  final String ticker;
+  final int qty;
+  final double avgPrice;
+  final double currentPrice;
+  final double marketValue;
+  final double profitAmount;
+  final double returnPct;
 
-// flutter pub run build_runner build --delete-conflicting-outputs
-@freezed
-abstract class Holding with _$Holding{
-
-  factory Holding({
-    required String ticker,
-    required int qty,
-    @JsonKey(name: 'avg_price') required double avgPrice,
-    @JsonKey(name: 'return_pct') required double returnPct,
-  }) = _Holding;
-
-  factory Holding.fromJson(Map<String, dynamic> json) => _$HoldingFromJson(json);
+  factory Holding.fromJson(Map<String, dynamic> json) {
+    return Holding(
+      ticker: json['ticker'] as String,
+      qty: (json['qty'] as num).toInt(),
+      avgPrice: (json['avg_price'] as num).toDouble(),
+      currentPrice: (json['current_price'] as num?)?.toDouble() ?? 0,
+      marketValue: (json['market_value'] as num?)?.toDouble() ?? 0,
+      profitAmount: (json['profit_amount'] as num?)?.toDouble() ?? 0,
+      returnPct: (json['return_pct'] as num).toDouble(),
+    );
+  }
 }
 
-@freezed
-abstract class DashboardData with _$DashboardData {
-  // 불변 객체 (@Data + @Builder)와 유사함.
-  factory DashboardData({
-    @JsonKey(name: 'total_asset') required double totalAsset,
-    @JsonKey(name: 'cash_balance') required double cashBalance,
-    @JsonKey(name: 'stock_value') required double stockValue,
-    required List<Holding> holdings,
-  }) = _DashboardData;
+class DashboardData {
+  const DashboardData({
+    required this.totalAsset,
+    required this.cashBalance,
+    required this.stockValue,
+    required this.totalProfit,
+    required this.totalReturnRate,
+    required this.holdings,
+  });
 
-  factory DashboardData.fromJson(Map<String, dynamic> json) => _$DashboardDataFromJson(json);
+  final double totalAsset;
+  final double cashBalance;
+  final double stockValue;
+  final double totalProfit;
+  final double totalReturnRate;
+  final List<Holding> holdings;
+
+  factory DashboardData.fromJson(Map<String, dynamic> json) {
+    return DashboardData(
+      totalAsset: (json['total_asset'] as num).toDouble(),
+      cashBalance: (json['cash_balance'] as num).toDouble(),
+      stockValue: (json['stock_value'] as num).toDouble(),
+      totalProfit: (json['total_profit'] as num?)?.toDouble() ?? 0,
+      totalReturnRate: (json['total_return_rate'] as num?)?.toDouble() ?? 0,
+      holdings: (json['holdings'] as List<dynamic>)
+          .map((item) => Holding.fromJson(item as Map<String, dynamic>))
+          .toList(),
+    );
+  }
 }

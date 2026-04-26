@@ -1,34 +1,66 @@
-from fastapi import FastAPI, HTTPException
+import logging
+import os
 from contextlib import asynccontextmanager
-from apscheduler.schedulers.background import BackgroundScheduler
+from zoneinfo import ZoneInfo
 
+from apscheduler.schedulers.background import BackgroundScheduler
+from fastapi import FastAPI
+
+from src.api.endpoints import dashboard, recommendation, stock, trade, watchlist
 from src.core.database import init_db
-from src.api.endpoints import dashboard, trade, recommendation, stock, watchlist
 from src.core.scheduler import update_daily_recommendations
 
-import datetime
+# uv run python -m uvicorn src.main:app --reload
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO"),
+    format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+)
+logger = logging.getLogger(__name__)
 
-# 시작하기
-# 1. 데이터 수집하기
-# uv run python -m src.data_loader.collector
+SCHEDULER_TIMEZONE = os.getenv("SCHEDULER_TIMEZONE", "Asia/Seoul")
+SCHEDULE_HOUR = int(os.getenv("RECOMMENDATION_SCHEDULE_HOUR", "8"))
+SCHEDULE_MINUTE = int(os.getenv("RECOMMENDATION_SCHEDULE_MINUTE", "0"))
 
-# 2. api endpoint 열기
-# uv run python -m uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+scheduler = BackgroundScheduler(timezone=ZoneInfo(SCHEDULER_TIMEZONE))
 
-# --- 스케줄러 설정 --- 
-scheduler = BackgroundScheduler()
+
+def configure_scheduler() -> None:
+    scheduler.add_job(
+        update_daily_recommendations,
+        trigger="cron",
+        hour=SCHEDULE_HOUR,
+        minute=SCHEDULE_MINUTE,
+        id="daily_recommendation_update",
+        replace_existing=True,
+        max_instances=1,
+        coalesce=True,
+    )
+
+    job = scheduler.get_job("daily_recommendation_update")
+    logger.info(
+        "추천 스케줄 등록 완료: timezone=%s pending=%s",
+        SCHEDULER_TIMEZONE,
+        job.pending if job else None,
+    )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
-
-    scheduler.add_job(update_daily_recommendations, 'date', run_date=datetime.datetime.now() + datetime.timedelta(seconds=5))
+    configure_scheduler()
     scheduler.start()
-    print("Scheduler Started!")
-    yield
-    
-    scheduler.shutdown()
-    print("Scheduler Shutdown")
+    job = scheduler.get_job("daily_recommendation_update")
+    logger.info(
+        "스케줄러 시작: next_run=%s",
+        getattr(job, "next_run_time", None) if job else None,
+    )
+
+    try:
+        yield
+    finally:
+        scheduler.shutdown(wait=False)
+        logger.info("스케줄러 종료")
+
 
 app = FastAPI(
     title="Robo-Advisor API",
@@ -37,10 +69,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-init_db()
+
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "QuantRobo Server v2 Running 🚀"}
+    return {"status": "ok", "message": "QuantRobo Server v2 Running"}
+
 
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(trade.router, prefix="/trade", tags=["Trade"])

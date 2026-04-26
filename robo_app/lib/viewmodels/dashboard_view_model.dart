@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../models/dashboard_data.dart';
 import '../services/api_service.dart';
 import '../utils/logger.dart';
@@ -20,8 +21,8 @@ class DashboardViewModel extends ChangeNotifier {
     try {
       _data = await ApiService.fetchDashboard();
     } catch (e) {
-      _errorMessage = "데이터를 불러오는데 실패했습니다.";
-      logger.e("ViewModel Error", error: e);
+      _errorMessage = '대시보드 데이터를 불러오지 못했습니다.';
+      logger.e('dashboard fetch failed', error: e);
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -29,26 +30,18 @@ class DashboardViewModel extends ChangeNotifier {
   }
 
   Future<bool> buyStock(String ticker, double amount) async {
-    bool success = await ApiService.buyStock(ticker, amount);
-    
+    final success = await ApiService.buyStock(ticker, amount);
     if (success) {
       await fetchDashboard();
-      return true;
-    } else {
-      return false;
     }
+    return success;
   }
 
   Future<bool> sellStock(String ticker, int quantity) async {
-    bool success = await ApiService.sellStock(ticker, quantity);
-
+    final success = await ApiService.sellStock(ticker, quantity);
     if (success) {
       await fetchDashboard();
-      return true;
     }
-    else {
-      return false;
-    }
+    return success;
   }
-  
 }

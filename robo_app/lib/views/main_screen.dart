@@ -1,8 +1,9 @@
-
 import 'package:flutter/material.dart';
-import 'package:robo_app/views/search_screen.dart';
+
 import 'dashboard_screen.dart';
 import 'recommend_screen.dart';
+import 'search_screen.dart';
+import 'settings_screen.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -14,11 +15,11 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
-    const SearchScreen(),
-    const RecommendScreen(),
-    const Center(child: Text('설정 화면'),),
+  final List<Widget> _screens = const [
+    DashboardScreen(),
+    RecommendScreen(),
+    SearchScreen(),
+    SettingsScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -30,25 +31,33 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _screens,
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
         onDestinationSelected: _onItemTapped,
         destinations: const [
           NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined), 
+            icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
-            label: '자산',
+            label: 'Dashboard',
           ),
           NavigationDestination(
             icon: Icon(Icons.auto_graph_outlined),
             selectedIcon: Icon(Icons.auto_graph),
-            label: 'AI 추천',
+            label: 'Recommendations',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.search_outlined),
+            selectedIcon: Icon(Icons.search),
+            label: 'Search',
           ),
           NavigationDestination(
             icon: Icon(Icons.settings_outlined),
             selectedIcon: Icon(Icons.settings),
-            label: '설정',
+            label: 'Settings',
           ),
         ],
       ),

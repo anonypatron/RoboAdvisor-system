@@ -1,71 +1,72 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
-from src.core.database import get_db
+
+from src.core.database import StockPrice, get_db
 from src.trader.portfolio import PortfolioManager
-from src.core.advisor import RoboAdvisor
-from src.strategies.advanced import GoldenCrossVolumeStrategy
 
 router = APIRouter()
-pm = PortfolioManager()
-advisor = RoboAdvisor(GoldenCrossVolumeStrategy(vol_ratio=1.5))
+
 
 class TradeRequest(BaseModel):
     ticker: str
     amount: float
 
+
 class SellRequest(BaseModel):
     ticker: str
     quantity: int
 
+
+def get_latest_close_price(db: Session, ticker: str) -> float | None:
+    latest_close_row = (
+        db.query(StockPrice.close)
+        .filter(StockPrice.ticker == ticker)
+        .order_by(StockPrice.date.desc())
+        .first()
+    )
+    if latest_close_row is None:
+        return None
+    return float(latest_close_row[0])
+
+
 @router.post("/buy")
 def buy_stock(request: TradeRequest, db: Session = Depends(get_db)):
-    # 1. 현재가 조회
-    df = advisor.get_data(request.ticker)
-    if df.empty:
+    current_price = get_latest_close_price(db, request.ticker)
+    if current_price is None:
         raise HTTPException(status_code=404, detail="Ticker not found")
-    
-    current_price = float(df.iloc[-1]['close'])
-    
-    # 2. 매수 실행
-    success = pm.buy(request.ticker, current_price, request.amount)
-    
+
+    portfolio_manager = PortfolioManager(db)
+    success = portfolio_manager.buy(request.ticker, current_price, request.amount)
     if not success:
         raise HTTPException(
             status_code=400,
-            detail="잔고가 부족하거나 주문 수량이 0입니다.",
+            detail="Insufficient cash balance or invalid order amount",
         )
-    
+
     return {
-        "status": "success", 
-        "message": f"{request.ticker} 매수 성공!",
-        "price": current_price
+        "status": "success",
+        "message": f"{request.ticker} buy order executed",
+        "price": current_price,
     }
+
 
 @router.post("/sell")
 def sell_stock(request: SellRequest, db: Session = Depends(get_db)):
-    """
-    매도 주문
-    """
-    df = advisor.get_data(request.ticker)
-    if df.empty:
-        raise HTTPException(
-            status_code=404,
-            detail="Ticker not found",
-        )
-    
-    current_price = float(df.iloc[-1]['close'])
+    current_price = get_latest_close_price(db, request.ticker)
+    if current_price is None:
+        raise HTTPException(status_code=404, detail="Ticker not found")
 
-    success = pm.sell(request.ticker, current_price, request.quantity)
-
+    portfolio_manager = PortfolioManager(db)
+    success = portfolio_manager.sell(request.ticker, current_price, request.quantity)
     if not success:
         raise HTTPException(
             status_code=400,
-            detail="보유 수량 부족 또는 매도 실패",
+            detail="Insufficient holdings or invalid sell quantity",
         )
-    
+
     return {
         "status": "success",
-        "message": "매도 체결 완료",
+        "message": f"{request.ticker} sell order executed",
         "price": current_price,
     }
