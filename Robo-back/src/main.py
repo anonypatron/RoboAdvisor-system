@@ -7,6 +7,13 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from fastapi import FastAPI
 
 from src.api.endpoints import dashboard, recommendation, stock, trade, watchlist
+from src.api.routers import (
+    dashboard_router,
+    recommendation_router,
+    stock_router,
+    trade_router,
+    watchlist_router,
+)
 from src.core.database import init_db
 from src.core.scheduler import update_daily_recommendations
 
@@ -75,8 +82,16 @@ def read_root():
     return {"status": "ok", "message": "QuantRobo Server v2 Running"}
 
 
+# Legacy routers (kept for backward compatibility)
 app.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 app.include_router(trade.router, prefix="/trade", tags=["Trade"])
 app.include_router(recommendation.router, prefix="/recommendations", tags=["Recommendation"])
 app.include_router(stock.router, prefix="/stock", tags=["Stock Info"])
 app.include_router(watchlist.router, prefix="/watchlist", tags=["Watchlist"])
+
+# Clean Architecture routers (v2)
+app.include_router(dashboard_router.router, prefix="/v2/dashboard", tags=["v2 Dashboard"])
+app.include_router(trade_router.router, prefix="/v2/trade", tags=["v2 Trade"])
+app.include_router(recommendation_router.router, prefix="/v2/recommendations", tags=["v2 Recommendation"])
+app.include_router(stock_router.router, prefix="/v2/stock", tags=["v2 Stock Info"])
+app.include_router(watchlist_router.router, prefix="/v2/watchlist", tags=["v2 Watchlist"])

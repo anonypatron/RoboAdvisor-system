@@ -17,3 +17,7 @@ ios/Pods/
 .idea/
 .DS_Store
 AGENT.md
+CLAUDE.md
+/document/*
+.claude
+.claude/**
